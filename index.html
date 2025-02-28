@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语六级作文词汇检查</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        main {
+            font-family: "Times New Roman", 'Microsoft YaHei', sans-serif;
+        }
+
+        /* 磨砂玻璃效果 */
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            /* 背景模糊 */
+            background-color: rgba(255, 255, 255, 0.1);
+            /* 半透明背景 */
+            border-radius: 15px;
+            /* 圆角效果 */
+        }
+
+        .word-found {
+            color: green;
+        }
+
+        .word-notfound {
+            color: rgb(39, 39, 39);
+        }
+
+        /* 确保卡片占据剩余高度 */
+        .card-container {
+            height: calc(100vh - 128px);
+            display: flex;
+            /* 添加这一行，使卡片容器成为 Flexbox 容器 */
+        }
+
+        /* 当屏幕宽度小于某个值时，卡片垂直排列 */
+        @media (max-width: 800px) {
+            .card-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .card-container>div {
+                width: 100%;
+                height: 50%;
+            }
+        }
+
+        /* 确保卡片内容区域与外层容器大小一致 */
+        .card-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 文本框占据剩余空间 */
+        #essayText {
+            flex-grow: 1;
+            resize: none;
+            height: 100%;
+            background-color: #f9fafb;
+            color: #1a202c;
+        }
+
+        /* 确保文本框父元素也占据剩余空间 */
+        .flex-grow {
+            height: 100%;
+        }
+
+        /* 夜间模式 */
+        body {
+            background-color: #f0f4f8;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 夜间模式下的背景色和文字色 */
+        .dark body {
+            background-color: #1a202c;
+        }
+
+        .dark header {
+            background-color: #2d3748;
+        }
+
+        .dark footer {
+            background-color: #2d3748;
+        }
+
+        .dark .bg-white {
+            background-color: #2d3748;
+        }
+
+        .dark .text-gray-500 {
+            color: #e2e8f0;
+        }
+
+        .dark .text-white {
+            color: #edf2f7;
+        }
+
+        .dark .text-sm {
+            color: #edf2f7;
+        }
+
+        .dark .bg-indigo-500 {
+            background-color: #4c51bf;
+        }
+
+        .dark .bg-indigo-500:hover {
+            background-color: #434190;
+        }
+
+        .dark .card-content {
+            background-color: #2d3748;
+        }
+
+        /* 输入框的夜间模式样式 */
+        .dark #essayText {
+            background-color: #2d3748;
+            color: #edf2f7;
+        }
+
+        .dark .word-found {
+            color: #68d391;
+        }
+
+        .dark .word-notfound {
+            color: #edf2f7;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-r from-blue-100 to-blue-200 min-h-screen flex flex-col dark:bg-gray-800 dark:text-white">
+    <header class="bg-blue-600 text-white p-6 shadow-md-200xl dark:bg-gray-700 flex justify-between items-center">
+        <h1 class="text-3xl font-semibold text-center">英语六级作文词汇检查</h1>
+        <button id="darkModeToggle" onclick="toggleDarkMode()" class="text-white focus:outline-none">
+            <i class="fas fa-moon text-2xl"></i> <!-- 夜间模式图标 -->
+        </button>
+    </header>
+
+    <main class="flex flex-grow p-4 card-container">
+        <div class="w-1/2 p-2">
+            <div class="bg-white rounded-lg shadow-md p-4 card-content dark:bg-gray-800">
+                <div class="mb-4">
+                    <!-- <label for="vocabularyFile" class="block text-sm font-medium text-gray-700">上传词汇库(.txt)</label> -->
+                    <div class="flex items-center justify-between">
+                        <!-- 显示文件名，左边 -->
+                        <span id="fileName" class="text-sm text-gray-500 block flex-1 dark:text-gray-300">Please upload
+                            the
+                            vocabulary (.txt)</span>
+
+                        <!-- 隐藏原本的文件输入框 -->
+                        <input type="file" id="vocabularyFile" accept=".txt" class="hidden" onchange="updateFileName()">
+
+                        <!-- 默认词库 -->
+                        <button id="useDefaultVocabulary" onclick="useDefaultVocabulary()"
+                            class="ml-2 py-2 px-4 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-700">默认词库</button>
+                        <!-- 自定义的上传按钮，右边 -->
+                        <button type="button" onclick="document.getElementById('vocabularyFile').click()"
+                            class="ml-2 py-2 px-4 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-700">
+                            上传文件
+                        </button>
+                        <button onclick="checkVocabulary()"
+                            class="ml-2 py-2 px-4 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-700">检查词汇</button>
+                    </div>
+                </div>
+
+                <div class="mb-4 flex-grow">
+                    <label for="essayText"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">输入作文内容</label>
+                    <textarea id="essayText" rows="10"
+                        class="mt-1 p-2 block w-full border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-1/2 p-2">
+            <div class="bg-white rounded-lg shadow-md p-4 card-content dark:bg-gray-800">
+                <div id="result" class="mt-3"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-blue-600 text-white p-6 shadow-md-200xl text-center dark:bg-gray-700">
+        <p></p>
+        <p>联系方式：baizx98@qq.com</p>
+        <p>版本：1.0</p>
+    </footer>
+
+    <script>
+        document.getElementById('vocabularyFile').addEventListener('change', function () {
+            const fileName = this.files[0] ? this.files[0].name : '';
+            document.getElementById('fileName').textContent = fileName;
+        });
+
+        // function checkVocabulary() {
+        //     const vocabularyFile = document.getElementById('vocabularyFile').files[0];
+        //     const essayText = document.getElementById('essayText').value;
+        //     const resultDiv = document.getElementById('result');
+        //     resultDiv.innerHTML = '';
+
+        //     if (!vocabularyFile) {
+        //         showWarning('请先上传词汇库文件！');
+        //         return;
+        //     }
+        //     // 如果文本框内容为空，则显示提示条
+        //     // 检查作文内容是否为空
+        //     if (!essayText.trim()) {
+        //         showWarning('作文内容不能为空！');
+        //         return;
+        //     }
+
+        //     const reader = new FileReader();
+        //     reader.onload = function (event) {
+        //         const vocabulary = event.target.result.split('\n').map(word => word.trim());
+
+        //         // 将每一行分开处理，保留换行符
+        //         const lines = essayText.split('\n');
+        //         let resultHTML = '';
+
+        //         lines.forEach(line => {
+        //             const words = line.split(/\s+/); // 按空格拆分每行的单词
+        //             words.forEach(word => {
+        //                 if (vocabulary.includes(word.toLowerCase())) {
+        //                     resultHTML += `<span class="word-found dark:word-found sm:text-lg">${word}</span> `;
+        //                 } else {
+        //                     resultHTML += `<span class="word-notfound dark:word-notfound sm:text-lg">${word}</span> `;
+        //                 }
+        //             });
+        //             resultHTML += '<br>'; // 每行结束后加上换行符
+        //         });
+
+        //         resultDiv.innerHTML = resultHTML;
+        //     };
+        //     reader.readAsText(vocabularyFile);
+        // }
+
+        function checkVocabulary() {
+            const vocabularyFile = document.getElementById('vocabularyFile').files[0];
+            const essayText = document.getElementById('essayText').value;
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            if (!vocabularyFile && !window.defaultVocabulary) {
+                showWarning('请先上传词汇库文件！');
+                return;
+            }
+
+            // 如果文本框内容为空，则显示提示条
+            if (!essayText.trim()) {
+                showWarning('作文内容不能为空！');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const vocabulary = event.target.result.split('\n').map(word => word.trim());
+
+                // 将每一行分开处理，保留换行符
+                const lines = essayText.split('\n');
+                let resultHTML = '';
+
+                lines.forEach(line => {
+                    const words = line.split(/\s+/); // 按空格拆分每行的单词
+                    words.forEach(word => {
+                        if (vocabulary.includes(word.toLowerCase())) {
+                            resultHTML += `<span class="word-found dark:word-found sm:text-lg">${word}</span> `;
+                        } else {
+                            resultHTML += `<span class="word-notfound dark:word-notfound sm:text-lg">${word}</span> `;
+                        }
+                    });
+                    resultHTML += '<br>'; // 每行结束后加上换行符
+                });
+
+                resultDiv.innerHTML = resultHTML;
+            };
+
+            if (vocabularyFile) {
+                reader.readAsText(vocabularyFile);
+            } else if (window.defaultVocabulary) {
+                reader.onload({ target: { result: window.defaultVocabulary } });
+            }
+        }
+
+        function useDefaultVocabulary() {
+            fetch('./vocab/cet6_all.txt')
+                .then(response => response.text())
+                .then(data => {
+                    window.defaultVocabulary = data; // 将默认词库存储到全局变量
+                    showWarning('已加载默认词库！');
+                })
+                .catch(error => {
+                    showWarning('无法加载默认词库，请检查文件路径！');
+                });
+        }
+
+
+
+
+        function showWarning(message) {
+            const warningDiv = document.createElement('div');
+            warningDiv.classList.add(
+                'fixed',
+                'top-20',            // 设置距离顶部的空隙
+                'left-1/2',          // 设置左侧距离为50%以便居中
+                'transform',         // 启用 transform 来使其真正居中
+                '-translate-x-1/2',  // 向左平移50%的宽度，实现完全居中
+                'bg-red-500',
+                'text-white',
+                'text-center',
+                'py-2',
+                'z-50',
+                'w-full',            // 设置宽度为100%
+                'max-w-lg',           // 最大宽度限制，可以根据需要调整
+                'rounded-lg',
+            );
+            warningDiv.innerHTML = message;
+
+            document.body.appendChild(warningDiv);
+
+            // 2秒后自动消失
+            setTimeout(() => {
+                warningDiv.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => {
+                    warningDiv.remove();
+                }, 500);
+            }, 2000);
+        }
+
+
+
+        // 切换夜间模式
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+        }
+    </script>
+</body>
+
+</html>
