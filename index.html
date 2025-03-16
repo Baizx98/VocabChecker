@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英语六级作文词汇检查</title>
+    <title>英语四六级作文词汇检查</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -22,8 +22,12 @@
             /* 圆角效果 */
         }
 
-        .word-found {
+        .word-found-cet6 {
             color: #0000ff;
+        }
+
+        .word-found-cet4 {
+            color: #42edea;
         }
 
         .word-notfound {
@@ -124,8 +128,12 @@
             color: #edf2f7;
         }
 
-        .dark .word-found {
+        .dark .word-found-cet6 {
             color: #1e5aff;
+        }
+
+        .dark .word-found-cet4 {
+            color: #42edea;
         }
 
         .dark .word-notfound {
@@ -136,7 +144,7 @@
 
 <body class="bg-gradient-to-r from-blue-100 to-blue-200 min-h-screen flex flex-col ">
     <header class="bg-blue-600 text-white p-6 shadow-md-200xl flex justify-between items-center">
-        <h1 class="text-3xl font-semibold text-center">英语六级作文词汇检查</h1>
+        <h1 class="text-3xl font-semibold text-center">英语四六级作文词汇检查</h1>
         <button id="darkModeToggle" onclick="toggleDarkMode()" class="text-white focus:outline-none">
             <i class="fas fa-moon text-2xl"></i> <!-- 夜间模式图标 -->
         </button>
@@ -187,7 +195,7 @@
     <footer class="bg-blue-600 text-white p-6 shadow-md-200xl text-center ">
         <p></p>
         <p>联系方式：baizx98@qq.com</p>
-        <p>版本：1.0</p>
+        <p>版本：1.1</p>
         <p><a href="https://github.com/Baizx98/VocabChecker">Go to home page</a></p>
     </footer>
 
@@ -203,12 +211,11 @@
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = '';
 
-            if (!vocabularyFile && !window.defaultVocabulary) {
+            if (!vocabularyFile && (!window.cet6Vocabulary || !window.cet4Vocabulary)) {
                 showWarning('请先上传词汇库文件或选择默认词库！');
                 return;
             }
 
-            // 如果文本框内容为空，则显示提示条
             if (!essayText.trim()) {
                 showWarning('作文内容不能为空！');
                 return;
@@ -216,29 +223,29 @@
 
             const reader = new FileReader();
             reader.onload = function (event) {
-                const vocabulary = event.target.result.split('\n').map(word => word.trim());
-
-                // 将每一行分开处理，保留换行符
+                const customVocabulary = event.target.result.split('\n').map(word => word.trim().toLowerCase());
                 const lines = essayText.split('\n');
                 let resultHTML = '';
 
                 lines.forEach(line => {
-                    // const words = line.split(/\s+/); // 按空格拆分每行的单词
-                    const regex = /(\w+|[^\w\s])/g; // 匹配单词和非单词的正则表达式
-                    const matches = line.match(regex) || []; // 如果没有匹配项，则使用空数组
-                    console.log(matches);
+                    const regex = /(\w+|[^\w\s])/g;
+                    const matches = line.match(regex) || [];
+
                     matches.forEach(match => {
-                        if (/\w+/.test(match)) { // 如果是单词
-                            if (vocabulary.includes(match.toLowerCase())) {
-                                resultHTML += `<span class="word-found sm:text-lg">${match}</span> `;
+                        let lowerMatch = match.toLowerCase();
+                        if (/\w+/.test(match)) { // 只检查单词
+                            if (window.cet6Vocabulary.has(lowerMatch)) {
+                                resultHTML += `<span class="word-found-cet6 sm:text-lg">${match}</span> `;
+                            } else if (window.cet4Vocabulary.has(lowerMatch)) {
+                                resultHTML += `<span class="word-found-cet4 sm:text-lg">${match}</span> `;
                             } else {
                                 resultHTML += `<span class="word-notfound sm:text-lg">${match}</span> `;
                             }
-                        } else { // 如果不是单词
+                        } else {
                             resultHTML += `<span class="word-notfound sm:text-lg">${match}</span> `;
                         }
                     });
-                    resultHTML += '<br>'; // 每行结束后加上换行符
+                    resultHTML += '<br>';
                 });
 
                 resultDiv.innerHTML = resultHTML;
@@ -246,19 +253,21 @@
 
             if (vocabularyFile) {
                 reader.readAsText(vocabularyFile);
-            } else if (window.defaultVocabulary) {
-                reader.onload({ target: { result: window.defaultVocabulary } });
+            } else {
+                reader.onload({ target: { result: '' } });
             }
         }
 
         function useDefaultVocabulary() {
-            fetch('./vocab/cet6_all_20250228.txt')
-                .then(response => response.text())
-                .then(data => {
-                    window.defaultVocabulary = data; // 将默认词库存储到全局变量
-                    showInfo('已加载默认词库！');
-                })
-                .catch(error => {
+            Promise.all([
+                fetch('./vocab/cet6_all_20250228.txt').then(response => response.text()),
+                fetch('./vocab/cet4_all_20250315.txt').then(response => response.text())
+            ])
+                .then(([cet6Data, cet4Data]) => {
+                    window.cet6Vocabulary = new Set(cet6Data.split('\n').map(word => word.trim().toLowerCase()));
+                    window.cet4Vocabulary = new Set(cet4Data.split('\n').map(word => word.trim().toLowerCase()));
+                    showInfo('已加载默认 CET-4 和 CET-6 词库！');
+                }).catch(error => {
                     showWarning('无法加载默认词库，请检查文件路径！');
                 });
         }
